@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jax-ws xmlns="http://www.netbeans.org/ns/jax-ws/1">
+  <services>
+    <service name="DerechoAutorWS">
+      <implementation-class>com.iepi.derechoautor.DerechoAutorWS</implementation-class>
+    </service>
+    <service name="PropiedadIndustrialWS">
+      <implementation-class>com.iepi.propiedadindustrial.PropiedadIndustrialWS</implementation-class>
+    </service>
+  </services>
+  <clients/>
+  <jsr109>false</jsr109>
+</jax-ws>
