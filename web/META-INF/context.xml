@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context antiJARLocking="true" path="/IEPI">
+  <Resource auth="Container" driverClassName="com.microsoft.sqlserver.jdbc.SQLServerDriver" maxActive="20" maxIdle="10" maxWait="-1" name="Autorext" password="" type="javax.sql.DataSource" url="jdbc:sqlserver://localhost\SQLEXPRESS:1433;databaseName=Autorext" username="sa"/>
+</Context>

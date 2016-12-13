@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoints version="2.0" xmlns="http://java.sun.com/xml/ns/jax-ws/ri/runtime">
+  <endpoint implementation="com.iepi.derechoautor.DerechoAutorWS" name="DerechoAutorWS" url-pattern="/DerechoAutorWS"/>
+  <endpoint implementation="com.iepi.propiedadindustrial.PropiedadIndustrialWS" name="PropiedadIndustrialWS" url-pattern="/PropiedadIndustrialWS"/>
+</endpoints>
