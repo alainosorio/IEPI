@@ -12,6 +12,6 @@
         <title>Servicios Web IEPI</title>
     </head>
     <body>
-        <h1>Servicios Web IEPI</h1>
+        <h2>Servicios Web IEPI</h2>
     </body>
 </html>
