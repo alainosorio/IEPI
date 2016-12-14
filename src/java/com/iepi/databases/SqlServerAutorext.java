@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Clase de conexión a la base de datos SQLServer
  * @author Administrator
  */
 public class SqlServerAutorext {
