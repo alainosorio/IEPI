@@ -4,8 +4,10 @@
  */
 package com.iepi.derechoautor;
 
+import com.iepi.databases.PersonaDerechoAutor;
 import com.iepi.databases.SqlServerAutorext;
 import com.iepi.databases.vRegistro;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.jws.WebService;
@@ -18,25 +20,37 @@ import javax.jws.WebParam;
  */
 @WebService(serviceName = "DerechoAutorWS")
 public class DerechoAutorWS {
+
     /**
      * Web service operation
      * @param identificacion RUC o Cédula
      * @return List
      */
     @WebMethod(operationName = "devolverInformacionAutor")
-    public List<vRegistro> devolverInformacionAutor(@WebParam(name = "identificacion") String identificacion) {
+    public List<PersonaDerechoAutor> devolverInformacionAutor(@WebParam(name = "login") String login, @WebParam(name = "password") String password, @WebParam(name = "identificacion") String identificacion) {
+        List<PersonaDerechoAutor> ListaInformacion = new ArrayList<PersonaDerechoAutor>();
+        
+        SqlServerAutorext sqlserver = new SqlServerAutorext();
+
         try {
-            List<vRegistro> ListaInformacion = new ArrayList<vRegistro>();
+            boolean autenticacion = sqlserver.consultaUsuarioPass(login, password);
 
-            SqlServerAutorext sqlserver = new SqlServerAutorext();
+            if (autenticacion) {
+                ListaInformacion = sqlserver.InformacionDerechoAutor(identificacion);
+            } else {
+                PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
+                RegistroVacio.setError("Usuario y/o contraseña incorrecto(s)");
 
-            ListaInformacion = sqlserver.InformacionAutor(identificacion);
-
-            return ListaInformacion;
-
+                ListaInformacion.add(RegistroVacio);
+            }
         } catch (Exception ex) {
-            return new ArrayList<vRegistro>();
+            PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
+            RegistroVacio.setError("Ocurrio un error al consultar el servicio");
+
+            ListaInformacion.add(RegistroVacio);
         }
+
+        return ListaInformacion;
     }
 
     /**
@@ -59,5 +73,5 @@ public class DerechoAutorWS {
         } catch (Exception ex) {
             return false;
         }
-    }       
+    }
 }

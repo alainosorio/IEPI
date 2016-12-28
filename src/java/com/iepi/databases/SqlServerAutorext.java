@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -44,60 +45,94 @@ public class SqlServerAutorext {
      * @param identificacion RUC o Cédula
      * @return List
      */
-    public List<vRegistro> InformacionAutor(String identificacion) {
-        List<vRegistro> ListaVacia = new ArrayList<vRegistro>();
-        vRegistro RegistroVacio = new vRegistro();
+    public List<PersonaDerechoAutor> InformacionDerechoAutor(String identificacion) {
 
+        List<PersonaDerechoAutor> ListaVacia = new ArrayList<PersonaDerechoAutor>();
+        
+        PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
 
-        List<vRegistro> ListaInformacionAutor = new ArrayList<vRegistro>();
+        List<PersonaDerechoAutor> ListaInformacionAutor = new ArrayList<PersonaDerechoAutor>();
 
         try {
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM [dbo].[vRegistro] WHERE [IDENTIFICATION] = ?");
+            /**
+             * Se consulta el autor
+             */
+            String query = "select distinct FIRSTNAME as persNombre, SURNAME + coalesce(' ' + SURNAME2, '') as persApellidos, coalesce(ADDRESS1, '') as persDireccion, ACT_NOM as persActividad, IDENTIFICATION as identificacion from [dbo].[vDerechoAutor] where IDENTIFICATION = ?";
+
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, identificacion);
 
             ResultSet result = statement.executeQuery();
 
             while (result.next()) {
-                vRegistro registro = new vRegistro(result.getString(1),
+                PersonaDerechoAutor Persona = new PersonaDerechoAutor(
+                        result.getString(1),
                         result.getString(2),
                         result.getString(3),
                         result.getString(4),
                         result.getString(5),
-                        result.getString(6),
-                        result.getString(7),
-                        result.getString(8),
-                        result.getString(9),
-                        result.getString(10),
-                        result.getString(11),
-                        result.getString(12),
-                        result.getString(13),
-                        result.getString(14),
-                        result.getString(15),
-                        result.getString(16),
-                        result.getString(17),
-                        result.getString(18),
-                        result.getString(19),
-                        result.getString(20),
-                        result.getString(21));
+                        new ArrayList<ObraDerechoAutor>());
 
-                ListaInformacionAutor.add(registro);
+                ListaInformacionAutor.add(Persona);
             }
 
             result.close();
 
+            /**
+             * Se consultan las obras del autor
+             */
+            for (Iterator<PersonaDerechoAutor> persona = ListaInformacionAutor.iterator(); persona.hasNext();) {
+                
+                query = "SELECT distinct REG_TOR, REG_DES, REG_TES, REG_COD, USR_NOM, REG_FIRCAR, REG_FEC from dbo.vDerechoAutor where IDENTIFICATION = ?"
+                        + " and FIRSTNAME = ? and ACT_NOM = ?";
+
+                PersonaDerechoAutor personaIterador = persona.next();
+                
+                statement = connection.prepareStatement(query);
+                statement.setString(1, identificacion);
+                statement.setString(2, personaIterador.getPersNombre());
+                statement.setString(3, personaIterador.getPersActividad());
+
+                result = statement.executeQuery();
+
+                List<ObraDerechoAutor> ListaObras = new ArrayList<ObraDerechoAutor>();
+
+                while (result.next()) {
+                    ObraDerechoAutor Obra = new ObraDerechoAutor(
+                            result.getString(1),
+                            result.getString(2),
+                            "autorObra",
+                            "titularObra",
+                            result.getString(3),
+                            result.getString(4),
+                            result.getString(5),
+                            result.getString(6),
+                            result.getString(7));
+
+                    ListaObras.add(Obra);
+                }
+                
+                result.close();
+
+                personaIterador.setObras(ListaObras);
+            }
+
+            /**
+             * Se cierra la conexión y se retornan los datos
+             */
             connection.close();
 
             if (ListaInformacionAutor.size() > 0) {
                 return ListaInformacionAutor;
             } else {
-                RegistroVacio.setERROR("No se encontraron datos para la identificación introducida");
+                RegistroVacio.setError("No se encontraron datos para la identificación introducida");
 
                 ListaVacia.add(RegistroVacio);
 
                 return ListaVacia;
             }
         } catch (Exception e) {
-            RegistroVacio.setERROR("Ocurrio un error al consultar el servicio");
+            RegistroVacio.setError("Ocurrió un error al consultar el servicio");
 
             ListaVacia.add(RegistroVacio);
 
@@ -126,8 +161,6 @@ public class SqlServerAutorext {
             }
 
             result.close();
-
-            connection.close();
 
             return !"".equals(nombreUsuario);
 
