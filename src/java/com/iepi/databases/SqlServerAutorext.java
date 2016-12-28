@@ -41,7 +41,7 @@ public class SqlServerAutorext {
     }
 
     /**
-     * Retorna una lista con la información de derecho de autor
+     * Retorna una lista con la información de Derecho de Autor
      * @param identificacion RUC o Cédula
      * @return List
      */
