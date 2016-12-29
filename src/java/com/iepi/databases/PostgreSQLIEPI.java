@@ -9,6 +9,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -49,17 +50,17 @@ public class PostgreSQLIEPI {
         try {
             String nombreUsuario = "";
 
-            /*PreparedStatement statement = connection.prepareStatement("SELECT [USR_NOM] FROM [dbo].[USUARIO] WHERE [USR_LOG] = ? AND [pwd] = ?");
-            statement.setString(1, login);
-            statement.setString(2, password);
+            /*PreparedStatement statementPersona = connection.prepareStatement("SELECT [USR_NOM] FROM [dbo].[USUARIO] WHERE [USR_LOG] = ? AND [pwd] = ?");
+            statementPersona.setString(1, login);
+            statementPersona.setString(2, password);
             
-            ResultSet result = statement.executeQuery();
+            ResultSet resultPersona = statementPersona.executeQuery();
             
-            while (result.next()) {
-            nombreUsuario = result.getString(1);
+            while (resultPersona.next()) {
+            nombreUsuario = resultPersona.getString(1);
             }
             
-            result.close();
+            resultPersona.close();
             
             connection.close();*/
 
@@ -81,44 +82,146 @@ public class PostgreSQLIEPI {
      * @param identificacion RUC o Cédula
      * @return 
      */
-    public List<vPersonaPropiedadIntelectual> devolverModificacionesTramites(String identificacion) {
-        List<vPersonaPropiedadIntelectual> ListaInformacion = new ArrayList<vPersonaPropiedadIntelectual>();
+    public List<PersonaModificaciones> devolverModificacionesTramites(String identificacion) {
+        
+        List<PersonaModificaciones> ListaPersonaModificaciones = new ArrayList<PersonaModificaciones>();
+        PersonaModificaciones registroPersona = new PersonaModificaciones();
 
-        List<vPersonaPropiedadIntelectual> ListaVacia = new ArrayList<vPersonaPropiedadIntelectual>();
-        vPersonaPropiedadIntelectual registroVacio = new vPersonaPropiedadIntelectual();
+        List<TituloModificaciones> ListaTituloModificaciones = new ArrayList<TituloModificaciones>();
+
+        List<SolicitudModificaciones> ListaSolicitudModificaciones = new ArrayList<SolicitudModificaciones>();
+
+        List<SolicitudPersonaBeneficiariaModificaciones> ListaSolicitudPersonaBeneficiariaModificaciones =
+                new ArrayList<SolicitudPersonaBeneficiariaModificaciones>();
+
+        List<PersonaModificaciones> ListaVacia = new ArrayList<PersonaModificaciones>();
+        PersonaModificaciones RegistroVacio = new PersonaModificaciones();
 
         try {
-            PreparedStatement statement = connection.prepareStatement("SELECT persdocumento, persnombre FROM persona where persdocumento = ?");
+            /**
+             * Se consulta la persona
+             */
+            String query = "SELECT distinct persnombre, persdireccion, perstipdocumento, persdocumento FROM v_modificaciones where persdocumento = ?";
+
+            PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, identificacion);
 
             ResultSet result = statement.executeQuery();
 
             while (result.next()) {
-                vPersonaPropiedadIntelectual registro = new vPersonaPropiedadIntelectual(result.getString(1),
-                        result.getString(2));
+                registroPersona = new PersonaModificaciones(result.getString(1),
+                        result.getString(2),
+                        result.getString(3),
+                        result.getString(4),
+                        new ArrayList<TituloModificaciones>());
 
-                ListaInformacion.add(registro);
+                ListaPersonaModificaciones.add(registroPersona);
             }
+
+            /**
+             * Se consultan los titulos por la persona
+             */
+            for (Iterator<PersonaModificaciones> persona = ListaPersonaModificaciones.iterator(); persona.hasNext();) {
+
+                PersonaModificaciones personaIterador = persona.next();
+
+                query = "SELECT titunumregistro, titufecharegistro, titufechavencimiento, persnombre, persdireccion, perstipdocumento, persdocumento FROM v_modificaciones where persnombre = ? and  persdireccion = ? and persdocumento = ?";
+
+                statement = connection.prepareStatement(query);
+                statement.setString(1, personaIterador.getPersNombre());
+                statement.setString(2, personaIterador.getPersDireccion());
+                statement.setString(3, personaIterador.getPersDocumento());
+
+                ResultSet resultTitulo = statement.executeQuery();
+
+                while (resultTitulo.next()) {
+                    TituloModificaciones registroTitulo = new TituloModificaciones(resultTitulo.getString(1),
+                            resultTitulo.getString(2),
+                            resultTitulo.getString(3),
+                            resultTitulo.getString(4),
+                            resultTitulo.getString(5),
+                            resultTitulo.getString(6),
+                            resultTitulo.getString(7),
+                            new ArrayList<SolicitudModificaciones>());
+
+                    ListaTituloModificaciones.add(registroTitulo);
+                }
+            }
+
+            /**
+             * Se consultan las solicitudes por titulo
+             */
+            for (Iterator<TituloModificaciones> titulo = ListaTituloModificaciones.iterator(); titulo.hasNext();) {
+                TituloModificaciones tituloIterador = titulo.next();
+
+                query = "SELECT soltipdescripcion, solivalornuevo, solifechacertificado, solinumcertificado, solifechacontratolicencia FROM v_modificaciones where titunumregistro = ?";
+
+                statement = connection.prepareStatement(query);
+                statement.setString(1, tituloIterador.getTitunumRegistro());
+
+                ResultSet resultSolicitud = statement.executeQuery();
+
+                while (resultSolicitud.next()) {
+                    SolicitudModificaciones registroSolicitud = new SolicitudModificaciones(resultSolicitud.getString(1),
+                            resultSolicitud.getString(2),
+                            resultSolicitud.getString(3),
+                            resultSolicitud.getString(4),
+                            resultSolicitud.getString(5),
+                            new ArrayList<SolicitudPersonaBeneficiariaModificaciones>());
+
+                    ListaSolicitudModificaciones.add(registroSolicitud);
+                }
+
+                tituloIterador.setSolicitudes(ListaSolicitudModificaciones);
+            }
+
+            /**
+             * Se consultan los beneficiarios por solicitudes
+             */
+            for (Iterator<SolicitudModificaciones> solicitud = ListaSolicitudModificaciones.iterator(); solicitud.hasNext();) {
+                SolicitudModificaciones solicitudIterador = solicitud.next();
+
+                query = "SELECT tipolicenciantedescripcion, nombre, cedula, direccion FROM v_modificaciones where soliNumCertificado = ?;";
+
+                statement = connection.prepareStatement(query);
+                statement.setString(1, solicitudIterador.getSoliNumCertificado());
+
+                ResultSet resultBeneficiario = statement.executeQuery();
+
+                while (resultBeneficiario.next()) {
+                    SolicitudPersonaBeneficiariaModificaciones registroBeneficiario = new SolicitudPersonaBeneficiariaModificaciones(resultBeneficiario.getString(1),
+                            resultBeneficiario.getString(2),
+                            resultBeneficiario.getString(3),
+                            resultBeneficiario.getString(4));
+
+                    ListaSolicitudPersonaBeneficiariaModificaciones.add(registroBeneficiario);
+                }
+
+                solicitudIterador.setPersonasBeneficiarias(ListaSolicitudPersonaBeneficiariaModificaciones);
+            }
+
+            registroPersona.setTitulos(ListaTituloModificaciones);
 
             result.close();
 
             connection.close();
 
-            if (ListaInformacion.size() > 0) {
-                return ListaInformacion;
+            if (ListaPersonaModificaciones.size() > 0) {
+                return ListaPersonaModificaciones;
             } else {
-                registroVacio.setERROR("No se encontraron datos para la identificación introducida");
+                RegistroVacio.setError("No se encontraron datos para la identificación introducida");
 
-                ListaVacia.add(registroVacio);
+                ListaVacia.add(RegistroVacio);
 
                 return ListaVacia;
             }
         } catch (Exception e) {
-            registroVacio.setERROR("Ocurrio un error al consultar el servicio");
+            RegistroVacio.setError("Ocurrió un error al consultar el servicio");
 
-            ListaVacia.add(registroVacio);
+            ListaVacia.add(RegistroVacio);
 
             return ListaVacia;
+        } finally {
         }
     }
 }
