@@ -4,10 +4,9 @@
  */
 package com.iepi.derechoautor;
 
-import com.iepi.databases.PersonaDerechoAutor;
+import com.iepi.databases.DerechoAutor;
+import com.iepi.databases.ObraDerechoAutor;
 import com.iepi.databases.SqlServerAutorext;
-import com.iepi.databases.vRegistro;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.jws.WebService;
@@ -27,8 +26,8 @@ public class DerechoAutorWS {
      * @return List
      */
     @WebMethod(operationName = "devolverInformacionAutor")
-    public List<PersonaDerechoAutor> devolverInformacionAutor(@WebParam(name = "login") String login, @WebParam(name = "password") String password, @WebParam(name = "identificacion") String identificacion) {
-        List<PersonaDerechoAutor> ListaInformacion = new ArrayList<PersonaDerechoAutor>();
+    public DerechoAutor devolverInformacionAutor(@WebParam(name = "login") String login, @WebParam(name = "password") String password, @WebParam(name = "identificacion") String identificacion) {
+        DerechoAutor ListaInformacion = new DerechoAutor();
         
         SqlServerAutorext sqlserver = new SqlServerAutorext();
 
@@ -38,16 +37,10 @@ public class DerechoAutorWS {
             if (autenticacion) {
                 ListaInformacion = sqlserver.InformacionDerechoAutor(identificacion);
             } else {
-                PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
-                RegistroVacio.setError("Usuario y/o contraseña incorrecto(s)");
-
-                ListaInformacion.add(RegistroVacio);
+                ListaInformacion.setError("Usuario y/o contraseña incorrecto(s)");
             }
         } catch (Exception ex) {
-            PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
-            RegistroVacio.setError("Ocurrio un error al consultar el servicio");
-
-            ListaInformacion.add(RegistroVacio);
+            ListaInformacion.setError("Ocurrio un error al consultar el servicio");
         }
 
         return ListaInformacion;
@@ -59,19 +52,19 @@ public class DerechoAutorWS {
      * @param password contraseña
      * @return Boolean
      */
-    @WebMethod(operationName = "consultaUsuarioPass")
-    public Boolean consultaUsuarioPass(@WebParam(name = "login") String login, @WebParam(name = "password") String password) {
-        try {
-            Boolean autenticacion = false;
-
-            SqlServerAutorext sqlserver = new SqlServerAutorext();
-
-            autenticacion = sqlserver.consultaUsuarioPass(login, password);
-
-            return autenticacion;
-
-        } catch (Exception ex) {
-            return false;
-        }
-    }
+//    @WebMethod(operationName = "consultaUsuarioPass")
+//    public Boolean consultaUsuarioPass(@WebParam(name = "login") String login, @WebParam(name = "password") String password) {
+//        try {
+//            Boolean autenticacion = false;
+//
+//            SqlServerAutorext sqlserver = new SqlServerAutorext();
+//
+//            autenticacion = sqlserver.consultaUsuarioPass(login, password);
+//
+//            return autenticacion;
+//
+//        } catch (Exception ex) {
+//            return false;
+//        }
+//    }
 }

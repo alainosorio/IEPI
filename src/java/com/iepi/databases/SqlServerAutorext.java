@@ -45,19 +45,20 @@ public class SqlServerAutorext {
      * @param identificacion RUC o Cédula
      * @return List
      */
-    public List<PersonaDerechoAutor> InformacionDerechoAutor(String identificacion) {
+    public DerechoAutor InformacionDerechoAutor(String identificacion) {
 
-        List<PersonaDerechoAutor> ListaVacia = new ArrayList<PersonaDerechoAutor>();
-        
-        PersonaDerechoAutor RegistroVacio = new PersonaDerechoAutor();
+        List<ObraDerechoAutor> ListaObraDerechoAutor = new ArrayList<ObraDerechoAutor>();
 
-        List<PersonaDerechoAutor> ListaInformacionAutor = new ArrayList<PersonaDerechoAutor>();
+        DerechoAutor ListaObras = new DerechoAutor();
+
+        String query = "";
 
         try {
             /**
-             * Se consulta el autor
+             * Se consulta la obra
              */
-            String query = "select distinct FIRSTNAME as persNombre, SURNAME + coalesce(' ' + SURNAME2, '') as persApellidos, coalesce(ADDRESS1, '') as persDireccion, ACT_NOM as persActividad, IDENTIFICATION as identificacion from [dbo].[vDerechoAutor] where IDENTIFICATION = ?";
+            //query = "select distinct FIRSTNAME as persNombre, SURNAME + coalesce(' ' + SURNAME2, '') as persApellidos, coalesce(ADDRESS1, '') as persDireccion, ACT_NOM as persActividad, IDENTIFICATION as identificacion from [dbo].[vDerechoAutor] where IDENTIFICATION = ?";
+            query = "SELECT distinct REG_TOR, REG_DES, REG_TES, REG_COD, USR_NOM, REG_FIRCAR, REG_FEC from dbo.vDerechoAutor where IDENTIFICATION = ?";
 
             PreparedStatement statement = connection.prepareStatement(query);
             statement.setString(1, identificacion);
@@ -65,56 +66,55 @@ public class SqlServerAutorext {
             ResultSet result = statement.executeQuery();
 
             while (result.next()) {
-                PersonaDerechoAutor Persona = new PersonaDerechoAutor(
+                ObraDerechoAutor Obra = new ObraDerechoAutor(
                         result.getString(1),
                         result.getString(2),
+                        "autorObra",
+                        "titularObra",
                         result.getString(3),
                         result.getString(4),
                         result.getString(5),
-                        new ArrayList<ObraDerechoAutor>());
-
-                ListaInformacionAutor.add(Persona);
+                        result.getString(6),
+                        result.getString(7),
+                        new ListaPersonaDerechoAutor());
+                
+                ListaObraDerechoAutor.add(Obra);
             }
+
+            ListaObras.getObras().setObra(ListaObraDerechoAutor);
 
             result.close();
 
             /**
-             * Se consultan las obras del autor
+             * Se consultan las personas
              */
-            for (Iterator<PersonaDerechoAutor> persona = ListaInformacionAutor.iterator(); persona.hasNext();) {
-                
-                query = "SELECT distinct REG_TOR, REG_DES, REG_TES, REG_COD, USR_NOM, REG_FIRCAR, REG_FEC from dbo.vDerechoAutor where IDENTIFICATION = ?"
-                        + " and FIRSTNAME = ? and ACT_NOM = ?";
+            for (Iterator<ObraDerechoAutor> obra = ListaObraDerechoAutor.iterator(); obra.hasNext();) {
+                query = "select distinct FIRSTNAME as persNombre, SURNAME + coalesce(' ' + SURNAME2, '') as persApellidos, coalesce(ADDRESS1, '') as persDireccion, ACT_NOM as persActividad, IDENTIFICATION as identificacion from [dbo].[vDerechoAutor] where IDENTIFICATION = ? and REG_COD = ?";
 
-                PersonaDerechoAutor personaIterador = persona.next();
-                
+                ObraDerechoAutor obraIterator = obra.next();
+
                 statement = connection.prepareStatement(query);
                 statement.setString(1, identificacion);
-                statement.setString(2, personaIterador.getPersNombre());
-                statement.setString(3, personaIterador.getPersActividad());
+                statement.setString(2, obraIterator.getNroCertificado());
 
                 result = statement.executeQuery();
 
-                List<ObraDerechoAutor> ListaObras = new ArrayList<ObraDerechoAutor>();
+                List<PersonaDerechoAutor> ListaPersona = new ArrayList<PersonaDerechoAutor>();
 
                 while (result.next()) {
-                    ObraDerechoAutor Obra = new ObraDerechoAutor(
+                    PersonaDerechoAutor Persona = new PersonaDerechoAutor(
                             result.getString(1),
                             result.getString(2),
-                            "autorObra",
-                            "titularObra",
                             result.getString(3),
                             result.getString(4),
-                            result.getString(5),
-                            result.getString(6),
-                            result.getString(7));
+                            result.getString(5));
 
-                    ListaObras.add(Obra);
+                    ListaPersona.add(Persona);
                 }
-                
+
                 result.close();
 
-                personaIterador.setObras(ListaObras);
+                obraIterator.getPersonas().setPersona(ListaPersona);
             }
 
             /**
@@ -122,21 +122,18 @@ public class SqlServerAutorext {
              */
             connection.close();
 
-            if (ListaInformacionAutor.size() > 0) {
-                return ListaInformacionAutor;
+            if (ListaObras.getObras().getObra().size() > 0) {
+                return ListaObras;
             } else {
-                RegistroVacio.setError("No se encontraron datos para la identificación introducida");
+                ListaObras.setError("No se encontraron datos para la identificación introducida");
 
-                ListaVacia.add(RegistroVacio);
-
-                return ListaVacia;
+                return ListaObras;
             }
         } catch (Exception e) {
-            RegistroVacio.setError("Ocurrió un error al consultar el servicio");
 
-            ListaVacia.add(RegistroVacio);
+            ListaObras.setError("Ocurrió un error al consultar el servicio");
 
-            return ListaVacia;
+            return ListaObras;
         }
     }
 
